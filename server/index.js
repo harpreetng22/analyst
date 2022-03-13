@@ -5,7 +5,16 @@ const app = express()
 app.enable('trust proxy');
  const port = 3001
  const UA='UA-222714834-1'
- 
+ const cors=require("cors");
+const corsOptions ={
+   origin:'*', 
+
+}
+const path = require('path')
+app.use(express.static(path.join(__dirname + "/public")))
+app.use(cors(corsOptions))
+
+
  app.get('/', async(req, res) => {
   await fetch(`https://www.google-analytics.com/collect?v=1&t=pageview&tid=UA-222714834-2&cid=5555&dp=%2Fhome`,
   {
@@ -39,82 +48,38 @@ app.enable('trust proxy');
  })
 
 
- app.get('/view', async(req, res) => {
+ app.get('/view/:s/:e/:id', async(req, res) => {
    
-  function handleReportingResults(response) {
-    if (!response.code) {
-      res.send('Query Success');
-      for( var i = 0, report; report = response.reports[i]; ++i )
-      {
-        output.push('<h3>All Rows Of Data</h3>');
-        if (report.data.rows && report.data.rows.length) {
-          var table = ['<table>'];
-  
-          // Put headers in table.
-          table.push('<tr><th>', report.columnHeader.dimensions.join('</th><th>'), '</th>');
-          table.push('<th>Date range #</th>');
-  
-          for (var i=0, header; header = report.columnHeader.metricHeader.metricHeaderEntries[i]; ++i) {
-            table.push('<th>', header.name, '</th>');
-          }
-  
-          table.push('</tr>');
-  
-          // Put cells in table.
-          for (var rowIndex=0, row; row = report.data.rows[rowIndex]; ++rowIndex) {
-            for(var dateRangeIndex=0, dateRange; dateRange = row.metrics[dateRangeIndex]; ++dateRangeIndex) {
-              // Put dimension values
-              table.push('<tr><td>', row.dimensions.join('</td><td>'), '</td>');
-              // Put metric values for the current date range
-              table.push('<td>', dateRangeIndex, '</td><td>', dateRange.values.join('</td><td>'), '</td></tr>');
-            }
-          }
-          table.push('</table>');
-  
-          output.push(table.join(''));
-        } else {
-          output.push('<p>No rows found.</p>');
-        }
-      }
-      res.send(output.join(''));
-  
-    } else {
-      res.send('There was an error: ' + response.message);
-    }
-  }
-  await fetch(`https://analyticsreporting.googleapis.com/v4/reports:batchGet`,
+  await fetch(`https://www.google-analytics.com/collect?v=1&t=pageview&tid=UA-222714834-2&cid=5555&dp=%2Fview`,
   {
     method:'POST',
     headers:{
       'user-agent':'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36'
     },
-    body: JSON.stringify(
-    {
-      "reportRequests":[
-        {
-          
-          "dateRanges": [{"startDate": "2022-03-01", "endDate": "2022-03-15"}],
-          "metrics": [
-            {
-               "expression": "ga:users"
-            }
-          ],
-         "viewId": "262509547",
-         "dimensions":[
-         {
-           "name":"ga:sessionCount",
-           "histogramBuckets":["1","10","100","200","400"]
-         }],
-         "orderBys":[
-         {
-           "fieldName":"ga:sessionCount",
-           "orderType":"HISTOGRAM_BUCKET"
-         }],
-        }]
-    } )
-  }).then(response=>handleReportingResults(response))
-   res.send('done')
+  })
+  gaApi( {
+    ...options,
+    ids: req.params.id,//"ga:262509547",
+      startDate: req.params.s,
+      endDate: req.params.e,
+      dimensions: "ga:affiliation,ga:date",
+      metrics: "ga:users,ga:avgSessionDuration"
+  }, function(err, data) {
+      console.log(data.totalsForAllResults);
+      res.send(data.totalsForAllResults);
+  });
+  
+  
  })
+
+ var options = {
+  clientId: "113674787172188893015",
+  email: " hsingh@myreact-343917.iam.gserviceaccount.com",
+  key: "myreact-343917-8913fa330365.json",
+  
+};
+gaApi = require('ga-api');
+ 
 
  
  app.listen(port, () => {
